@@ -4,6 +4,7 @@ using Azure.Storage.Blobs;
 using System;
 using System.IO;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace StorageTimeoutNet
@@ -26,7 +27,7 @@ namespace StorageTimeoutNet
             httpClientHandler.ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true;
 
             var httpClient = new HttpClient(httpClientHandler);
-            httpClient.Timeout = TimeSpan.FromSeconds(10);
+            httpClient.Timeout = TimeSpan.FromSeconds(5);
 
             var httpClientTransport = new HttpClientTransport(httpClient);
             var changeUriTransport = new ChangeUriTransport(httpClientTransport, "localhost", 7778);
@@ -34,7 +35,7 @@ namespace StorageTimeoutNet
             var blobClientOptions = new BlobClientOptions
             {
                 Transport = changeUriTransport,
-                Retry = { MaxRetries = 1 },
+                Retry = { MaxRetries = 1, NetworkTimeout = TimeSpan.FromSeconds(10) },
             };
 
             var blobClient = new BlobClient(connectionString, "testcontainer", "testblob", blobClientOptions);
@@ -52,22 +53,36 @@ namespace StorageTimeoutNet
             }
             else
             {
+                //using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+
                 Log("Calling DownloadAsync() ...");
-                var response = await blobClient.DownloadAsync();
+
+                var response = await blobClient.DownloadToAsync(new LogStream());
                 Log("Received Response");
 
-                Log($"ContentLength: {response.Value.ContentLength}");
+                //var response = await blobClient.DownloadAsync();
+                //Log("Received Response");
+                //Log($"ContentLength: {response.Value.ContentLength}");
 
-                Log("Reading response stream...");
-                var buffer = new byte[_readBufferSize];
-                var count = 0;
-                int bytesRead;
-                while ((bytesRead = await response.Value.Content.ReadAsync(buffer, 0, buffer.Length)) > 0)
-                {
-                    count += bytesRead;
-                    Log(count);
-                }
-                Log("Finished reading response stream");
+                //Log("Reading response stream...");
+                //var buffer = new byte[_readBufferSize];
+                //var count = 0;
+
+                //while (true)
+                //{
+                //    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+                //    var bytesRead = await response.Value.Content.ReadAsync(buffer, 0, buffer.Length, cts.Token);
+                //    if (bytesRead > 0)
+                //    {
+                //        count += bytesRead;
+                //        Log(count);
+                //    }
+                //    else
+                //    {
+                //        break;
+                //    }
+                //}
+                //Log("Finished reading response stream");
             }
         }
 
@@ -75,6 +90,47 @@ namespace StorageTimeoutNet
         {
             Console.WriteLine($"[{DateTime.Now:hh:mm:ss.fff}] {value}");
         }
+
+        private class LogStream : Stream
+        {
+            private int _count;
+
+            public override bool CanRead => false;
+
+            public override bool CanSeek => false;
+
+            public override bool CanWrite => true;
+
+            public override long Length => throw new NotImplementedException();
+
+            public override long Position { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+
+            public override void Flush()
+            {                
+            }
+
+            public override int Read(byte[] buffer, int offset, int count)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override long Seek(long offset, SeekOrigin origin)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override void SetLength(long value)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override void Write(byte[] buffer, int offset, int count)
+            {
+                _count += count;
+                Log(_count);
+            }
+        }
+
 
         private class ChangeUriTransport : HttpPipelineTransport
         {
