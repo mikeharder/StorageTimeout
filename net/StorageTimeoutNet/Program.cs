@@ -28,21 +28,21 @@ namespace StorageTimeoutNet
                 ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
             };
 
-var httpClient = new HttpClient(httpClientHandler)
-{
-    Timeout = TimeSpan.FromSeconds(5)
-};
+            var httpClient = new HttpClient(httpClientHandler)
+            {
+                Timeout = TimeSpan.FromSeconds(5)
+            };
 
-var blobClientOptions = new BlobClientOptions()
-{
-    Transport = new ChangeUriTransport(new HttpClientTransport(httpClient), "localhost", 7778),
-    Retry = {
-        MaxRetries = 1,
-        NetworkTimeout = TimeSpan.FromSeconds(10)
-    },
-};
+            var blobClientOptions = new BlobClientOptions()
+            {
+                Transport = new ChangeUriTransport(new HttpClientTransport(httpClient), "localhost", 7778),
+                Retry = {
+                    MaxRetries = 1,
+                    NetworkTimeout = TimeSpan.FromSeconds(10)
+                },
+            };
 
-var blobClient = new BlobClient(connectionString, "testcontainer", "testblob", blobClientOptions);
+            var blobClient = new BlobClient(connectionString, "testcontainer", "testblob", blobClientOptions);
 
             if (args.Length > 0 && args[0] == "upload")
             {
