@@ -5,7 +5,9 @@ import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+import com.azure.core.util.Context;
 import com.azure.storage.blob.*;
+import com.azure.storage.blob.models.DownloadRetryOptions;
 import com.azure.storage.common.policy.RequestRetryOptions;
 
 public class App {
@@ -40,7 +42,9 @@ public class App {
         }
 
         Log("Calling download(OutputStream)...");
-        blobClient.download(new LoggingOutputStream());
+        DownloadRetryOptions downloadRetryOptions = new DownloadRetryOptions();
+        downloadRetryOptions.setMaxRetryRequests(1);
+        blobClient.downloadWithResponse(new LoggingOutputStream(), null, downloadRetryOptions, null, false, null, Context.NONE);
         Log("Done");
     }
 
