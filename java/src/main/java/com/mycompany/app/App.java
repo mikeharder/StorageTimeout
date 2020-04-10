@@ -3,6 +3,7 @@ package com.mycompany.app;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
 import java.util.Date;
 
 import com.azure.core.util.Context;
@@ -44,7 +45,7 @@ public class App {
         Log("Calling download(OutputStream)...");
         DownloadRetryOptions downloadRetryOptions = new DownloadRetryOptions();
         downloadRetryOptions.setMaxRetryRequests(1);
-        blobClient.downloadWithResponse(new LoggingOutputStream(), null, downloadRetryOptions, null, false, null, Context.NONE);
+        blobClient.downloadWithResponse(new LoggingOutputStream(), null, downloadRetryOptions, null, false, Duration.ofSeconds(5), Context.NONE);
         Log("Done");
     }
 
