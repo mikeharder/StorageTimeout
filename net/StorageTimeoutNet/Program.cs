@@ -3,6 +3,7 @@ using Azure.Core.Pipeline;
 using Azure.Storage.Blobs;
 using System;
 using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -23,15 +24,22 @@ namespace StorageTimeoutNet
                 throw new InvalidOperationException("Undefined environment variable STORAGE_CONNECTION_STRING");
             }
 
+#if NETCOREAPP
             var httpClientHandler = new HttpClientHandler()
             {
                 ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
             };
+#else
+            ServicePointManager.ServerCertificateValidationCallback = (message, cert, chain, errors) => true;
+#endif
 
-            var httpClient = new HttpClient(httpClientHandler)
-            {
-                Timeout = TimeSpan.FromSeconds(5)
-            };
+#if NETCOREAPP
+            var httpClient = new HttpClient(httpClientHandler);
+#else
+            var httpClient = new HttpClient();
+#endif
+            
+            // httpClient.Timeout = TimeSpan.FromSeconds(5);
 
             var blobClientOptions = new BlobClientOptions()
             {
@@ -57,7 +65,7 @@ namespace StorageTimeoutNet
             }
             else
             {
-                //using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+                var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
 
                 Log("Calling DownloadAsync() ...");
 
